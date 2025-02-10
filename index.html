@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Location Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Location Tracker</h1>
+  <p>Click the button below to share your location and device information.</p>
+  <button onclick="getUserData()">Share Info</button>
+  <p id="demo"></p>
+
+  <script>
+    function getUserData() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+      } else {
+        document.getElementById("demo").innerHTML = "Geolocation is not supported by this browser.";
+      }
+
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        batteryLevel: null,
+        networkType: null,
+      };
+
+      if (navigator.getBattery) {
+        navigator.getBattery().then(battery => {
+          deviceInfo.batteryLevel = battery.level * 100;
+          deviceInfo.charging = battery.charging;
+          sendDataToServer(deviceInfo);
+        });
+      } else {
+        sendDataToServer(deviceInfo);
+      }
+
+      if (navigator.connection) {
+        deviceInfo.networkType = navigator.connection.effectiveType;
+      }
+
+      function sendDataToServer(data) {
+        fetch('https://your-firebase-function-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('Success:', result);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+      }
+    }
+
+    function showPosition(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      document.getElementById("demo").innerHTML = `
+        Location: <a href="${googleMapsLink}" target="_blank">View on Google Maps</a> <br>
+        Latitude: ${latitude} <br>
+        Longitude: ${longitude}
+      `;
+    }
+
+    function showError(error) {
+      document.getElementById("demo").innerHTML = "Error getting location: " + error.message;
+    }
+  </script>
+</body>
+</html>
